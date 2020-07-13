@@ -235,10 +235,18 @@ export function useForm<
     [],
   );
 
+  /**
+   * 设置表单的状态，判断是否是被修改过的表单
+   */
   const setDirty = React.useCallback(
     (name: InternalFieldName<TFieldValues>): boolean => {
       const { isDirty, dirtyFields } = readFormStateRef.current;
 
+      /**
+       * 这里是典型是使用 formState + Proxy 的优化处理
+       * 当外部组件没有使用到 formState中的isDirty和dirtyFields的时候
+       * 也就是说表单是否被修改这个状态不会应该外面组件的状态，所以就不需要重新渲染组件
+       */
       if (!fieldsRef.current[name] || (!isDirty && !dirtyFields)) {
         return false;
       }
@@ -465,6 +473,9 @@ export function useForm<
     }
   }
 
+  /**
+   * 该框架注入到每个字段的值变化回调函数，用来收集字段的值
+   */
   handleChangeRef.current = handleChangeRef.current
     ? handleChangeRef.current
     : async ({ type, target }: Event): Promise<void | boolean> => {
@@ -474,6 +485,7 @@ export function useForm<
 
         if (field) {
           const isBlurEvent = type === EVENTS.BLUR;
+          // 是否校检验该字段
           const shouldSkipValidation =
             !isOnAll &&
             skipValidation({
@@ -755,6 +767,13 @@ export function useForm<
     );
   }
 
+  /**
+   * 注册字段的方法
+   * 通过给字段的DOM元素注入值修改的事件，来收集字段的值
+   * 值修改的事件有：blur,change,input
+   * @param ref
+   * @param validateOptions 
+   */
   function registerFieldRef<TFieldElement extends FieldElement<TFieldValues>>(
     ref: TFieldElement & Ref,
     validateOptions: ValidationRules | null = {},
@@ -776,6 +795,7 @@ export function useForm<
     let isFieldArray;
     let defaultValue;
 
+    // 判断是否注册过
     if (
       field &&
       (isRadioOrCheckbox
@@ -904,6 +924,12 @@ export function useForm<
       | null,
     rules?: ValidationRules,
   ): ((ref: (TFieldElement & Ref) | null) => void) | void {
+
+    /**
+     * 这里兼容了 可以注册一些没有对应dom元素的字段
+     * 显示的使用场景中，有可能会有这样的场景。某些字段代表的表单的状态存在数据中，但是不反应在dom元素中
+     */
+
     if (!isWindowUndefined) {
       if (isString(refOrValidationOptions)) {
         registerFieldRef({ name: refOrValidationOptions }, rules);
@@ -1131,6 +1157,14 @@ export function useForm<
     getValues: React.useCallback(getValues, []),
     register: React.useCallback(register, [defaultValuesRef.current]),
     unregister: React.useCallback(unregister, []),
+
+    /**
+     * 这里使用Proxy来优化渲染，因为内部是使用ref来存储状态的。所以状态切换的时候并不会刷新组件
+     * 这里使用另一个ref变量 readFormStateRef 来判断某个状态是否被外部组件使用
+     * 从而来判断是否需要刷新组件 —— 代码中很多地方都有判断 readFormStateRef 内部的状态值，判断是否刷新组件
+     * 
+     * 这么做的问题就是判断很多，而且很分散，代码不好理解，在扩展上是不是也会有一点费力？
+     */
     formState: isProxyEnabled
       ? new Proxy<FormStateProxy<TFieldValues>>(formState, {
           get: (obj, prop: keyof FormStateProxy) => {

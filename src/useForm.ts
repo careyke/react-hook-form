@@ -150,6 +150,9 @@ export function useForm<
     [],
   );
 
+  /**
+   * 检验字段之后，判断是否需要刷新组件
+   */
   const shouldRenderBaseOnError = React.useCallback(
     (
       name: InternalFieldName<TFieldValues>,
@@ -192,6 +195,10 @@ export function useForm<
     [],
   );
 
+  /**
+   * 给对应的字段的DOM节点设置值
+   * 将值回填到 UI 中
+   */
   const setFieldValue = React.useCallback(
     (
       { ref, options }: Field,
@@ -236,7 +243,7 @@ export function useForm<
   );
 
   /**
-   * 设置表单的状态，判断是否是被修改过的表单
+   * 设置表单的状态，判断表单是否被修改过
    */
   const setDirty = React.useCallback(
     (name: InternalFieldName<TFieldValues>): boolean => {
@@ -280,6 +287,9 @@ export function useForm<
     [],
   );
 
+  /**
+   * 执行框架内部提供的校验规则
+   */
   const executeValidation = React.useCallback(
     async (
       name: InternalFieldName<TFieldValues>,
@@ -303,6 +313,10 @@ export function useForm<
     [shouldRenderBaseOnError, isValidateAllFieldCriteria],
   );
 
+  /**
+   * 执行自定义的校验规则
+   * 一般是由外面传进来的，外部验证模式，即使用自定义的验证规则来验证，而不是使用内部提供的规则来验证
+   */
   const executeSchemaOrResolverValidation = React.useCallback(
     async (
       payload:
@@ -350,6 +364,9 @@ export function useForm<
     [shouldRenderBaseOnError, isValidateAllFieldCriteria],
   );
 
+  /**
+   * 手动触发字段的规则校验
+   */
   const trigger = React.useCallback(
     async (
       name?: FieldName<TFieldValues> | FieldName<TFieldValues>[],
@@ -420,6 +437,9 @@ export function useForm<
         return true;
       }
 
+      /**
+       * unmountFieldsStateRef中存放的表单中没有挂载到真实dom节点的字段的值
+       */
       unmountFieldsStateRef.current[name] = value;
     },
     [setDirty, setFieldValue, setInternalValues],
@@ -430,6 +450,12 @@ export function useForm<
     watchFieldsRef.current.has(name) ||
     watchFieldsRef.current.has((name.match(/\w+/) || [])[0]);
 
+  /**
+   * 这里的 watchFieldsHookRef 和 watchFieldsHookRenderRef应该是两个新的api，暂时还没有完成
+   * 当某个字段和这个字段关联的时候，执行预先注册好的回调函数
+   * @param name 
+   * @param found 
+   */
   const renderWatchedInputs = (name: string, found = true): boolean => {
     if (!isEmptyObject(watchFieldsHookRef.current)) {
       for (const key in watchFieldsHookRef.current) {
@@ -448,6 +474,12 @@ export function useForm<
     return found;
   };
 
+  /**
+   * 设置表单中某个字段的值
+   * @param name 
+   * @param value 
+   * @param config 
+   */
   function setValue<
     TFieldName extends string,
     TFieldValue extends TFieldValues[TFieldName]
@@ -547,6 +579,9 @@ export function useForm<
         }
       };
 
+  /**
+   * 获取对应字段的值
+   */
   function getValues(): UnpackNestedValue<TFieldValues>;
   function getValues<TFieldName extends string, TFieldValue extends unknown>(
     name: TFieldName,
@@ -675,6 +710,13 @@ export function useForm<
     reRender();
   }
 
+  /**
+   * 设置观察字段，返回该字段当前的值。
+   * 观察某个字段往往涉及到字段之间的联动效果。
+   * 被观察的字段会暂存在 watchFieldsHookRef 或者 watchFieldsRef 中 
+   * 会在 isFieldWatched 和 renderWatchedInputs 方法中用到
+   * 联动字段中，有个字段变化的时候，会影响另一个字段的变化，所以需要刷新一次组件
+   */
   const watchInternal = React.useCallback(
     (
       fieldNames?: string | string[],

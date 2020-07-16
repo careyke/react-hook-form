@@ -13,6 +13,12 @@ import {
 } from './types/form';
 import { LiteralToPrimitive, DeepPartial } from './types/utils';
 
+/**
+ * 使用这种方式可以隔离刷新
+ * 可以做到只刷新部分组件，而不是直接刷新整个表单
+ * 本质就是抛弃useForm中的刷新，转而使用useWatch提供的刷新
+ * @param props 
+ */
 export function useWatch<TWatchFieldValues extends FieldValues>(props: {
   defaultValue?: UnpackNestedValue<DeepPartial<TWatchFieldValues>>;
   control?: Control;
@@ -43,6 +49,9 @@ export function useWatch<TWatchFieldValues>({
     watchInternal,
     defaultValuesRef,
   } = control || methods.control;
+  /**
+   * 这里多余使用一个useState，就是为了隔离刷新
+   */
   const [value, setValue] = React.useState<unknown>(
     isUndefined(defaultValue)
       ? isString(name)

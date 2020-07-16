@@ -85,6 +85,10 @@ export function useForm<
   shouldUnregister = true,
   criteriaMode,
 }: UseFormOptions<TFieldValues, TContext> = {}): UseFormMethods<TFieldValues> {
+  /**
+   * 存储表单字段的值
+   * 每个字段的基本结构是{ref:Ref,...}
+   */
   const fieldsRef = React.useRef<FieldRefs<TFieldValues>>({});
   const errorsRef = React.useRef<FieldErrors<TFieldValues>>({});
   const touchedFieldsRef = React.useRef<Touched<TFieldValues>>({});
@@ -151,7 +155,7 @@ export function useForm<
   );
 
   /**
-   * 检验字段之后，判断是否需要刷新组件
+   * 校验字段之后，判断是否需要刷新组件
    */
   const shouldRenderBaseOnError = React.useCallback(
     (
@@ -451,7 +455,7 @@ export function useForm<
     watchFieldsRef.current.has((name.match(/\w+/) || [])[0]);
 
   /**
-   * 这里的 watchFieldsHookRef 和 watchFieldsHookRenderRef应该是两个新的api，暂时还没有完成
+   * 这里的 watchFieldsHookRef 和 watchFieldsHookRenderRef应该是两个新的api，配合useWatch来使用的
    * 当某个字段和这个字段关联的时候，执行预先注册好的回调函数
    * @param name 
    * @param found 
@@ -611,6 +615,10 @@ export function useForm<
     );
   }
 
+  /**
+   * 验证外部的定义的检验规则
+   * 内部方法调用，一般是初始注册的时候调用，判断字段是否合法
+   */
   const validateResolver = React.useCallback(
     (values = {}) => {
       resolverRef.current!(
@@ -715,7 +723,7 @@ export function useForm<
    * 观察某个字段往往涉及到字段之间的联动效果。
    * 被观察的字段会暂存在 watchFieldsHookRef 或者 watchFieldsRef 中 
    * 会在 isFieldWatched 和 renderWatchedInputs 方法中用到
-   * 联动字段中，有个字段变化的时候，会影响另一个字段的变化，所以需要刷新一次组件
+   * 被观察的字段值更新的时候会刷新组件
    */
   const watchInternal = React.useCallback(
     (
@@ -801,6 +809,11 @@ export function useForm<
     return watchInternal(fieldNames, defaultValue);
   }
 
+  /**
+   * 取消注册字段
+   * 不再管理这个字段的值
+   * @param name 
+   */
   function unregister(
     name: FieldName<TFieldValues> | FieldName<TFieldValues>[],
   ): void {
@@ -976,6 +989,10 @@ export function useForm<
       if (isString(refOrValidationOptions)) {
         registerFieldRef({ name: refOrValidationOptions }, rules);
       } else if (
+        /**
+         * 使用Controller包装其他受控组件的时候，会伪造一个ref对象
+         * 从而将这个字段注册到form中统一管理
+         */
         isObject(refOrValidationOptions) &&
         'name' in refOrValidationOptions
       ) {
@@ -1221,6 +1238,11 @@ export function useForm<
       : formState,
   };
 
+  /**
+   * 将当前hook中的方法和上下文对象暴露出去
+   * 提供给其他的hook使用
+   * 比如 useWatch(),观察的字段必须要进行统一的管理，所以必须拿到useForm中的上下文
+   */
   const control = {
     removeFieldEventListener,
     renderWatchedInputs,

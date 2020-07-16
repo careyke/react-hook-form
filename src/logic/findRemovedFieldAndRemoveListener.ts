@@ -38,6 +38,7 @@ export default function findRemovedFieldAndRemoveListener<
     }
   }
 
+  // 非绑定在真实DOM的字段
   if (!type) {
     delete fieldsRef.current[name];
     return;

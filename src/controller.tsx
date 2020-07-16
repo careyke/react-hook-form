@@ -10,6 +10,12 @@ import { VALUE } from './constants';
 import { Control } from './types/form';
 import { ControllerProps } from './types/props';
 
+/**
+ * 本质上就是构造一个高阶组件来劫持当前的受控组件
+ * 然后再内部完成useState -> useRef的转化，也就是受控到非受控之间的转化
+ * 实现上是在内部维护一个state来收集当前字段的值的变化，然后将值传给表单管理器，有表单管理器来统一管理
+ * @param param0 
+ */
 const Controller = <
   TAs extends
     | React.ReactElement
@@ -77,6 +83,9 @@ const Controller = <
     return data;
   };
 
+  /**
+   * 将该字段注册到form中
+   */
   const registerField = React.useCallback(() => {
     if (fieldsRef.current[name]) {
       fieldsRef.current[name] = {
